@@ -16,8 +16,8 @@ config.debug = true; // for additional logging / debugging
 config.watch = {
 
   // see https://gekko.wizb.it/docs/introduction/supported_exchanges.html
-  exchange: 'binance',
-  currency: 'USDT',
+  exchange: 'gdax',
+  currency: 'USD',
   asset: 'BTC',
 
   // You can set your own tickrate (refresh rate).
@@ -117,7 +117,7 @@ config.mailer = {
   enabled: false, // Send Emails if true, false to turn off
   sendMailOnStart: true, // Send 'Gekko starting' message if true, not if false
 
-  email: '', // Your Gmail address
+  email: 'brishtiteveja@gmail.com', // Your Gmail address
   muteSoft: true, // disable advice printout if it's soft
 
   // You don't have to set your password here, if you leave it blank we will ask it
@@ -162,7 +162,7 @@ config.pushbullet = {
   // your pushbullet API key
   key: '',
   // your email
-  email: 'jon_snow@westeros.com',
+  email: 'brishtiteveja@gmail.com',
   // Messages will start with this tag
   tag: '[GEKKO]'
 };
