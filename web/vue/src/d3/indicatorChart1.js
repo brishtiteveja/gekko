@@ -29,7 +29,7 @@ export default function(_data, _trades, _height) {
   var dates = data.map(c => +c.date);
   var prices = data.map(c => +c.price)
 
-  var svg = d3.select("#chart");
+  var svg = d3.select("#indicatorChart");
 
   svg.attr("width", window.innerWidth - 20);
 

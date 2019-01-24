@@ -7,12 +7,15 @@
     .hr.contain
     chart(:data='candles', height='500')
     .hr.contain
+    indicatorChart(:data='candles', height='500')
+    .hr.contain
     roundtripTable(:roundtrips='result.roundtrips')
 </template>
 
 <script>
 import resultSummary from './summary.vue'
 import chart from './chartWrapper.vue'
+import indicatorChart from './indicatorChartWrapper.vue'
 import roundtripTable from './roundtripTable.vue'
 
 export default {
@@ -24,7 +27,8 @@ export default {
   components: {
     roundtripTable,
     resultSummary,
-    chart
+    chart,
+    indicatorChart
   },
   computed: {
     candles: function() {
