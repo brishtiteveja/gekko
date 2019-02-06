@@ -1,4 +1,5 @@
-var UIconfig = require('../vue/dist/UIconfig');
+//var UIconfig = require('../vue/dist/UIconfig');
+var UIconfig = require('../vue/statics/UIconfig');
 
 var config = {};
 

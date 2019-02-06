@@ -1,4 +1,5 @@
-const config = require('./vue/dist/UIconfig');
+//const config = require('./vue/dist/UIconfig');
+const config = require('./vue/statics/UIconfig');
 
 const koa = require('koa');
 const serve = require('koa-static');
@@ -108,7 +109,7 @@ router.post('/api/getCandles', require(ROUTE('getCandles')));
 
 app
   .use(cors())
-  .use(serve(WEBROOT + 'vue/dist'))
+  .use(serve(WEBROOT + 'vue')) //.use(serve(WEBROOT + 'vue/dist'))
   .use(bodyParser())
   .use(require('koa-logger')())
   .use(router.routes())
