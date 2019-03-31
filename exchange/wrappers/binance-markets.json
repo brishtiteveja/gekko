@@ -100,6 +100,7 @@
     "NEBL",
     "NPXS",
     "NXS",
+    "ONG",
     "ONT",
     "OST",
     "PAX",
@@ -133,6 +134,7 @@
     "TRX",
     "TUSD",
     "USDC",
+    "USDS",
     "VET",
     "VIA",
     "VIB",
@@ -1431,6 +1433,39 @@
     },
     {
       "pair": [
+        "PAX",
+        "BTT"
+      ],
+      "minimalOrder": {
+        "amount": 1,
+        "price": 1e-7,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
+        "TUSD",
+        "BTT"
+      ],
+      "minimalOrder": {
+        "amount": 1,
+        "price": 1e-7,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
+        "USDC",
+        "BTT"
+      ],
+      "minimalOrder": {
+        "amount": 1,
+        "price": 1e-7,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
         "USDT",
         "BTT"
       ],
@@ -3104,6 +3139,39 @@
     {
       "pair": [
         "BNB",
+        "ONG"
+      ],
+      "minimalOrder": {
+        "amount": 0.1,
+        "price": 0.00001,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
+        "BTC",
+        "ONG"
+      ],
+      "minimalOrder": {
+        "amount": 1,
+        "price": 1e-8,
+        "order": 0.001
+      }
+    },
+    {
+      "pair": [
+        "USDT",
+        "ONG"
+      ],
+      "minimalOrder": {
+        "amount": 0.01,
+        "price": 0.0001,
+        "order": 10
+      }
+    },
+    {
+      "pair": [
+        "BNB",
         "ONT"
       ],
       "minimalOrder": {
@@ -4161,6 +4229,50 @@
       "pair": [
         "USDT",
         "USDC"
+      ],
+      "minimalOrder": {
+        "amount": 0.01,
+        "price": 0.0001,
+        "order": 10
+      }
+    },
+    {
+      "pair": [
+        "PAX",
+        "USDS"
+      ],
+      "minimalOrder": {
+        "amount": 0.01,
+        "price": 0.0001,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
+        "TUSD",
+        "USDS"
+      ],
+      "minimalOrder": {
+        "amount": 0.01,
+        "price": 0.0001,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
+        "USDC",
+        "USDS"
+      ],
+      "minimalOrder": {
+        "amount": 0.01,
+        "price": 0.0001,
+        "order": 1
+      }
+    },
+    {
+      "pair": [
+        "USDT",
+        "USDS"
       ],
       "minimalOrder": {
         "amount": 0.01,
