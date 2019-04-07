@@ -4,7 +4,7 @@
 // see https://github.com/askmike/gekko/blob/stable/docs/installing_gekko_on_a_server.md
 
 const CONFIG = {
-    headless: false,
+    headless: true,
     api: {
       //host: '127.0.0.1',
       host: '0.0.0.0',
@@ -14,8 +14,8 @@ const CONFIG = {
     ui: {
       ssl: false,  // false for headless
       //host: '127.0.0.1',
-      host: 'ec2-3-17-143-70.us-east-2.compute.amazonaws.com', // couldn't manage to work from cloud
-      //host: '3.17.143.70', // for headless
+      host: 'ec2-18-224-138-115.us-east-2.compute.amazonaws.com', // couldn't manage to work from cloud
+      //host: '2.18.224.138.115', // for headless
       //port: 443,
       port: 3000,
       path: '/'
