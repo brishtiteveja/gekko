@@ -1,5 +1,5 @@
 //const config = require('./vue/dist/UIconfig');
-const config = require('./vue/statics/UIconfig');
+const config = require('./vue/statics/UiConfig');
 
 const koa = require('koa');
 const serve = require('koa-static');
