@@ -4,6 +4,8 @@ var path = require('path');
 var fs = require('fs');
 var semver = require('semver');
 var program = require('commander');
+var retry = require('retry');
+var Errors = require('./error');   
 
 var startTime = moment();
 
@@ -12,8 +14,20 @@ var _package = false;
 var _nodeVersion = false;
 var _gekkoMode = false;
 var _gekkoEnv = false;
-
 var _args = false;
+
+var retryHelper = function(fn, options, callback) {
+  var operation = retry.operation(options);
+  operation.attempt(function(currentAttempt) {
+    fn(function(err, result) {
+      if (!(err instanceof Errors.AbortError) && operation.retry(err)) {
+        return;
+      }
+
+      callback(err ? err.message : null, result);
+    });
+  });
+};
 
 // helper functions
 var util = {
@@ -25,10 +39,19 @@ var util = {
     if(!program.config)
         util.die('Please specify a config file.', true);
 
-    if(!fs.existsSync(util.dirs().gekko + program.config))
-      util.die('Cannot find the specified config file.', true);
+    try {
+      _config = require(program.config);
+      return _config;
+    }
+    catch (e) {
+      if (e instanceof Error && e.code === 'MODULE_NOT_FOUND') {
+        _config = require(util.dirs().gekko + program.config);
+        return _config;
+      }
+      else
+        util.die('Cannot find the specified config file.', true);
+    }
 
-    _config = require(util.dirs().gekko + program.config);
     return _config;
   },
   // overwrite the whole config
@@ -163,6 +186,19 @@ var util = {
   },
   getStartTime: function() {
     return startTime;
+  },
+  retry: function(fn, callback) {
+    var options = {
+      retries: 5,
+      factor: 1.2,
+      minTimeout: 1 * 1000,
+      maxTimeout: 3 * 1000,
+    };
+
+    retryHelper(fn, options, callback);
+  },
+  retryCustom: function(options, fn, callback) {
+    retryHelper(fn, options, callback);
   },
 }
 

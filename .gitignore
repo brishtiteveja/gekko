@@ -56,3 +56,9 @@ Gekko-BacktestTool
 Gekko-Datasets
 Gekko-Strategies
 gekko-quasar-ui
+
+# multi config generator files
+multi-config-generator/configs
+multi-config-generator/package.json
+multi-config-generator/package.json.lock
+
