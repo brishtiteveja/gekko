@@ -6,7 +6,14 @@ var fs = require('fs-extra');
 
 const fileHelper = (() => {
     const fileParts = (obj) => {
-        const fileName = `${obj.asset}-${obj.strategy}.${obj.exchange.substring(0, 3)}`;
+	const filename = null;
+   	if (obj.strategy != null)	
+           fileName = `${obj.asset}-${obj.currency}-${obj.strategy}.${obj.exchange.substring(0, 3)}`;
+	else if (obj.exchange != null) { 
+           fileName = `${obj.asset}-${obj.currency}.${obj.exchange.substring(0, 3)}`;
+	} else {
+           fileName = `${obj.asset}-${obj.currency}`;
+	}
         const scriptKey = `${configDirPath}/${obj.asset.toUpperCase()}/${fileName}`;
         const filePath = `${scriptKey}.js`;
         return {
@@ -15,6 +22,7 @@ const fileHelper = (() => {
             filePath: filePath
         }
     }
+
     const fileNames = (dir) => {
         const files = allFiles(dir);
         const filesWithFwSlash = files.map(f => f.replace(/\\/g, "/"));//Fixes Windows \ slashes for path

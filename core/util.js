@@ -5,7 +5,7 @@ var fs = require('fs');
 var semver = require('semver');
 var program = require('commander');
 var retry = require('retry');
-var Errors = require('./error');   
+var Errors = require('./error');
 
 var startTime = moment();
 
@@ -14,6 +14,7 @@ var _package = false;
 var _nodeVersion = false;
 var _gekkoMode = false;
 var _gekkoEnv = false;
+
 var _args = false;
 
 var retryHelper = function(fn, options, callback) {
@@ -33,11 +34,11 @@ var retryHelper = function(fn, options, callback) {
 var util = {
   getConfig: function() {
     // cache
-    if(_config)
+    if (_config)
       return _config;
 
-    if(!program.config)
-        util.die('Please specify a config file.', true);
+    if (!program.config)
+      util.die('Please specify a config file.', true);
 
     try {
       _config = require(program.config);
@@ -51,15 +52,13 @@ var util = {
       else
         util.die('Cannot find the specified config file.', true);
     }
-
-    return _config;
   },
   // overwrite the whole config
   setConfig: function(config) {
     _config = config;
   },
   setConfigProperty: function(parent, key, value) {
-    if(parent)
+    if (parent)
       _config[parent][key] = value;
     else
       _config[key] = value;
@@ -68,11 +67,11 @@ var util = {
     return util.getPackage().version;
   },
   getPackage: function() {
-    if(_package)
+    if (_package)
       return _package;
 
 
-    _package = JSON.parse( fs.readFileSync(__dirname + '/../package.json', 'utf8') );
+    _package = JSON.parse(fs.readFileSync(__dirname + '/../package.json', 'utf8'));
     return _package;
   },
   getRequiredNodeVersion: function() {
@@ -85,7 +84,7 @@ var util = {
   // check if two moments are corresponding
   // to the same time
   equals: function(a, b) {
-    return !(a < b || a > b)
+    return !(a < b || a > b);
   },
   minToMs: function(min) {
     return min * 60 * 1000;
@@ -93,26 +92,26 @@ var util = {
   defer: function(fn) {
     return function(args) {
       var args = _.toArray(arguments);
-      return _.defer(function() { fn.apply(this, args) });
-    }
+      return _.defer(function() {
+        fn.apply(this, args);
+      });
+    };
   },
   logVersion: function() {
-    return  `Gekko version: v${util.getVersion()}`
-    + `\nNodejs version: ${process.version}`;
+    return `Gekko version: v${util.getVersion()}`
+      + `\nNodejs version: ${process.version}`;
   },
   die: function(m, soft) {
+    if (_gekkoEnv === 'standalone' || !_gekkoEnv)
+      var log = console.log.bind(console);
+    else if (_gekkoEnv === 'child-process')
+      var log = m => process.send({ type: 'error', error: m });
 
-    if(_gekkoEnv === 'child-process') {
-      return process.send({type: 'error', error: '\n ERROR: ' + m + '\n'});
-    }
-
-    var log = console.log.bind(console);
-
-    if(m) {
-      if(soft) {
+    if (m) {
+      if (soft) {
         log('\n ERROR: ' + m + '\n\n');
       } else {
-        log(`\nGekko encountered an error and can\'t continue`);
+        log('\n\nGekko encountered an error and can\'t continue');
         log('\nError:\n');
         log(m, '\n\n');
         log('\nMeta debug info:\n');
@@ -139,13 +138,13 @@ var util = {
       workers: ROOT + 'core/workers/',
       web: ROOT + 'web/',
       config: ROOT + 'config/',
-      broker: ROOT + 'exchange/'
-    }
+      broker: ROOT + 'exchange/',
+    };
   },
   inherit: function(dest, source) {
     require('util').inherits(
       dest,
-      source
+      source,
     );
   },
   makeEventEmitter: function(dest) {
@@ -155,12 +154,12 @@ var util = {
     _gekkoMode = mode;
   },
   gekkoMode: function() {
-    if(_gekkoMode)
+    if (_gekkoMode)
       return _gekkoMode;
 
-    if(program['import'])
+    if (program['import'])
       return 'importer';
-    else if(program.backtest)
+    else if (program.backtest)
       return 'backtest';
     else
       return 'realtime';
@@ -169,8 +168,8 @@ var util = {
     return [
       'importer',
       'backtest',
-      'realtime'
-    ]
+      'realtime',
+    ];
   },
   setGekkoEnv: function(env) {
     _gekkoEnv = env;
@@ -179,7 +178,7 @@ var util = {
     return _gekkoEnv || 'standalone';
   },
   launchUI: function() {
-    if(program['ui'])
+    if (program['ui'])
       return true;
     else
       return false;
@@ -200,7 +199,7 @@ var util = {
   retryCustom: function(options, fn, callback) {
     retryHelper(fn, options, callback);
   },
-}
+};
 
 // NOTE: those options are only used
 // in stand alone mode
@@ -213,13 +212,13 @@ program
   .parse(process.argv);
 
 // make sure the current node version is recent enough
-if(!util.recentNode())
+if (!util.recentNode())
   util.die([
     'Your local version of Node.js is too old. ',
     'You have ',
     process.version,
     ' and you need atleast ',
-    util.getRequiredNodeVersion()
+    util.getRequiredNodeVersion(),
   ].join(''), true);
 
 module.exports = util;

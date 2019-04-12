@@ -1,7 +1,7 @@
 const pairConfig = {
     gdax: {
         trader: {
-            enabled: true,
+            enabled: false,
             key: '',
             secret: '',
             passphrase: '',
@@ -9,12 +9,12 @@ const pairConfig = {
         },
         pairs: [
             {
-                strategies: ["NNv2"],
+                strategies: ["BBRSI"],
                 currency: "BTC",
                 asset: "ETH",
             },
             {
-                strategies: ["NNv2", "TSI"],//Multiple strategies
+                strategies: ["BBRSI"],//Multiple strategies
                 currency: "BTC",
                 asset: "BCH",
             }
@@ -22,19 +22,19 @@ const pairConfig = {
     },
     binance: {
         trader: {
-            enabled: true,
+            enabled: false,
             key: '',
             secret: '',
             orderUpdateDelay: 1, // Number of minutes to adjust unfilled order prices
         },
         pairs: [
             {
-                strategies: ["NNv2"],
+                strategies: ["BBRSI"],
                 currency: "BTC",
                 asset: "ETH",
             },
             {
-                strategies: ["TSI"],
+                strategies: ["BBRSI"],
                 currency: "ETH",
                 asset: "ADA",
             }
