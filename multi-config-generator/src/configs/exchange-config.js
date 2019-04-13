@@ -1,8 +1,7 @@
 const exchangeConfig = {
 	exchanges: [ "binance",
-		    "bitstamp",
-		    "gdax"
-		  ]
+		         "coinbase"
+		       ]
 }
 
 exports.module = exchangeConfig;
