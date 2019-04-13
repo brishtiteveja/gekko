@@ -85,6 +85,16 @@ const importer = ({
 		           let watchProp = _config.watch; 
 
                    this.writeCurrencyConfig(_config, watchProp);
+                } else if (asset != null && currency == null) { // write config for specific asset
+	                marketData.markets.forEach(market => {
+                        if (market.pair[0] === asset) {
+	                        _config.watch.exchange =  exchange;
+		                    _config.watch.asset = market.pair[0];
+		                    _config.watch.currency = market.pair[1];
+		                    let watchProp = _config.watch; 
+                            this.writeCurrencyConfig(_config, watchProp);
+                        }
+       	            });
                 } else { // write config for all pairs
 	                marketData.markets.forEach(market => {
 	    	            _config.watch.exchange =  exchange;
@@ -107,6 +117,16 @@ const importer = ({
 		       let watchProp = _config.watch; 
 
                this.writeCurrencyConfig(_config, watchProp);
+            } else if (asset != null && currency == null) { // write config for specific asset
+	            marketData.markets.forEach(market => {
+                   if (market.pair[0] === asset) {
+	                    _config.watch.exchange =  exchange;
+		                _config.watch.asset = market.pair[0];
+		                _config.watch.currency = market.pair[1];
+		                let watchProp = _config.watch; 
+                        this.writeCurrencyConfig(_config, watchProp);
+                   }
+       	       });
             } else { // write config for all pairs
 	           marketData.markets.forEach(market => {
 	               _config.watch.exchange =  exchange;
@@ -160,6 +180,17 @@ const importer = ({
 		           let watchProp = _config.watch; 
 
 		           this.setScriptsProp(scripts, watchProp);
+                } else if (asset != null && currency == null) { // write config for specific asset
+	                marketData.markets.forEach(market => {
+                        if (market.pair[0] === asset) {
+	                        _config.watch.exchange =  exchange;
+		                    _config.watch.asset = market.pair[0];
+		                    _config.watch.currency = market.pair[1];
+		                    let watchProp = _config.watch; 
+
+		                    this.setScriptsProp(scripts, watchProp);
+                        }
+       	            });
                 } else { // write config for all pairs
 	                marketData.markets.forEach(market => {
 	    	            _config.watch.exchange =  exchange;
@@ -182,6 +213,17 @@ const importer = ({
 		       let watchProp = _config.watch; 
 
 		       this.setScriptsProp(scripts, watchProp);
+            } else if (asset != null && currency == null) { // write config for specific asset
+	           marketData.markets.forEach(market => {
+                   if (market.pair[0] === asset) {
+	                   _config.watch.exchange =  exchange;
+		               _config.watch.asset = market.pair[0];
+		               _config.watch.currency = market.pair[1];
+		               let watchProp = _config.watch; 
+
+		               this.setScriptsProp(scripts, watchProp);
+                   }
+       	       });
             } else { // write config for all pairs
 	           marketData.markets.forEach(market => {
 	               _config.watch.exchange =  exchange;
@@ -321,36 +363,60 @@ const importer = ({
             } else if (program.args.length == 4) {
                 exchange = program.args[0];
                 if(this.isValidExchange(exchange)) {
-                    console.log("Exchange name should not be specified.");
-                    return;
-                }
-                exchange = null;
-                asset = program.args[0];
-                currency = program.args[1];
+                    asset = program.args[1];
 
-                if(!this.isValidAssetCurrencyPair(exchange, asset, currency)) {
-                    console.log("Asset currency pair " + asset + "-" + currency + " for exchange " + exchange + " is not valid");
-                    return;
-                }
+                    if(!this.isValidAssetCurrencyPair(exchange, asset, currency)) {
+                         console.log("Asset currency pair " + asset + "-" + currency + " for exchange " + exchange + " is not valid");
+                        return;
+                    }
 
-                from = program.args[2];
-                to = program.args[3];
-                if (to === 'now')
-                    to = this.getCurrentTime();
+                    from = program.args[2];
+                    to = program.args[3];
+                    if (to === 'now')
+                        to = this.getCurrentTime();
 
-                if (!this.isValidDate(from)) {
-                   console.log("Daterange from is not valid");
-                   return;
+                    if (!this.isValidDate(from)) {
+                        console.log("Daterange from is not valid");
+                        return;
+                    }
+                    if (!this.isValidDate(to)) {
+                        console.log("Daterange to is not valid");
+                        return;
+                    }
+                    console.log("Condition 0-2");
+                    console.log("Generate config for all currencies against this specific asset for this exchange in the given daterange");
+                    // Example: node import -e exchange -a ETH -f "2019-01-01" -t "2019-03-01"
+                    //
+                    this.generateAllConfigs(exchange, asset, currency, from, to);
+                } else {
+                    exchange = null;
+                    asset = program.args[0];
+                    currency = program.args[1];
+
+                    if(!this.isValidAssetCurrencyPair(exchange, asset, currency)) {
+                        console.log("Asset currency pair " + asset + "-" + currency + " for exchange " + exchange + " is not valid");
+                        return;
+                    }
+
+                    from = program.args[2];
+                    to = program.args[3];
+                    if (to === 'now')
+                        to = this.getCurrentTime();
+
+                    if (!this.isValidDate(from)) {
+                        console.log("Daterange from is not valid");
+                        return;
+                    }
+                    if (!this.isValidDate(to)) {
+                        console.log("Daterange to is not valid");
+                        return;
+                    }
+                    console.log("Condition 0-1");
+                    console.log("Generate config for this pair for all exchanges in the given daterange");
+                    // Example: node import -a ETH -c BTC -f "2019-01-01" -t "2019-03-01"
+                    //
+                    this.generateAllConfigs(exchange, asset, currency, from, to);
                 }
-                if (!this.isValidDate(to)) {
-                   console.log("Daterange to is not valid");
-                   return;
-                }
-                console.log("Condition 0-1");
-                console.log("Generate config for this pair for all exchanges in the given daterange");
-                // Example: node import -a ETH -c BTC -f "2019-01-01" -t "2019-03-01"
-                //
-                this.generateAllConfigs(exchange, asset, currency, from, to);
             } else if(program.args.length == 3) { // Cond 1: exchange, from and to date given
                 exchange = program.args[0];
                 if(this.isValidExchange(exchange) == false) {
