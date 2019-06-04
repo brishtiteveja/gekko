@@ -40,7 +40,7 @@ const importer = ({
     setScriptsProp(scripts, watchProp) {
         const {filePath, fileName} = fileHelper.fileParts(watchProp);
         const relPath = process.cwd().replace(/\s/g, "\\ ");
-        const scriptValue = `node ${gekkoPath} --config ${relPath}/${filePath}`;
+        const scriptValue = `node ${gekkoPath} --config ${relPath}/${filePath} --import`;
         scripts[fileName] = scriptValue;
     },
     writeCurrencyConfig(config, watchProp) {
@@ -57,7 +57,7 @@ const importer = ({
         Object.keys(pairConfig).forEach(exchangeKey => {
             const exchange = pairConfig[exchangeKey];
             exchange.pairs.forEach(watchProp => {
-		watchProp.exchange = exchangeKey;
+		        watchProp.exchange = exchangeKey;
                 let {strategies, ...watch} = watchProp;//Ommit strategies
 		_config.watch = watch;
                 this.writeCurrencyConfig(_config, watchProp);
@@ -85,12 +85,12 @@ const importer = ({
 		           let watchProp = _config.watch; 
 
                    this.writeCurrencyConfig(_config, watchProp);
-                } else if (asset != null && currency == null) { // write config for specific asset
+                } else if (currency != null && asset == null) { // write config for specific asset
 	                marketData.markets.forEach(market => {
-                        if (market.pair[0] === asset) {
+                        if (market.pair[0] === currency) {
 	                        _config.watch.exchange =  exchange;
-		                    _config.watch.asset = market.pair[0];
-		                    _config.watch.currency = market.pair[1];
+		                    _config.watch.currency = market.pair[0];
+		                    _config.watch.asset = market.pair[1];
 		                    let watchProp = _config.watch; 
                             this.writeCurrencyConfig(_config, watchProp);
                         }
@@ -98,8 +98,8 @@ const importer = ({
                 } else { // write config for all pairs
 	                marketData.markets.forEach(market => {
 	    	            _config.watch.exchange =  exchange;
-		                _config.watch.asset = market.pair[0];
-		                _config.watch.currency = market.pair[1];
+		                _config.watch.currency = market.pair[0];
+		                _config.watch.asset = market.pair[1];
 		                let watchProp = _config.watch; 
 
                         this.writeCurrencyConfig(_config, watchProp);
@@ -117,12 +117,12 @@ const importer = ({
 		       let watchProp = _config.watch; 
 
                this.writeCurrencyConfig(_config, watchProp);
-            } else if (asset != null && currency == null) { // write config for specific asset
+            } else if (currency != null && asset == null) { // write config for specific asset
 	            marketData.markets.forEach(market => {
-                   if (market.pair[0] === asset) {
+                   if (market.pair[0] === currency) {
 	                    _config.watch.exchange =  exchange;
-		                _config.watch.asset = market.pair[0];
-		                _config.watch.currency = market.pair[1];
+		                _config.watch.currency = market.pair[0];
+		                _config.watch.asset = market.pair[1];
 		                let watchProp = _config.watch; 
                         this.writeCurrencyConfig(_config, watchProp);
                    }
@@ -130,8 +130,8 @@ const importer = ({
             } else { // write config for all pairs
 	           marketData.markets.forEach(market => {
 	               _config.watch.exchange =  exchange;
-		           _config.watch.asset = market.pair[0];
-		           _config.watch.currency = market.pair[1];
+		           _config.watch.currency = market.pair[0];
+		           _config.watch.asset = market.pair[1];
 		           let watchProp = _config.watch; 
 
                    this.writeCurrencyConfig(_config, watchProp);
@@ -175,8 +175,8 @@ const importer = ({
 	            const marketData = require(marketDataFile);
                 if (asset != null && currency != null) {
 	    	       _config.watch.exchange =  exchange;
-		           _config.watch.asset = asset;
 		           _config.watch.currency = currency;
+		           _config.watch.asset = asset;
 		           let watchProp = _config.watch; 
 
 		           this.setScriptsProp(scripts, watchProp);
@@ -184,8 +184,8 @@ const importer = ({
 	                marketData.markets.forEach(market => {
                         if (market.pair[0] === asset) {
 	                        _config.watch.exchange =  exchange;
-		                    _config.watch.asset = market.pair[0];
-		                    _config.watch.currency = market.pair[1];
+		                    _config.watch.currency = market.pair[0];
+		                    _config.watch.asset = market.pair[1];
 		                    let watchProp = _config.watch; 
 
 		                    this.setScriptsProp(scripts, watchProp);
@@ -194,8 +194,8 @@ const importer = ({
                 } else { // write config for all pairs
 	                marketData.markets.forEach(market => {
 	    	            _config.watch.exchange =  exchange;
-		                _config.watch.asset = market.pair[0];
-		                _config.watch.currency = market.pair[1];
+		                _config.watch.currency = market.pair[0];
+		                _config.watch.asset = market.pair[1];
 		                let watchProp = _config.watch; 
 
 		                this.setScriptsProp(scripts, watchProp);
@@ -215,10 +215,10 @@ const importer = ({
 		       this.setScriptsProp(scripts, watchProp);
             } else if (asset != null && currency == null) { // write config for specific asset
 	           marketData.markets.forEach(market => {
-                   if (market.pair[0] === asset) {
+                   if (market.pair[0] === currency) {
 	                   _config.watch.exchange =  exchange;
-		               _config.watch.asset = market.pair[0];
-		               _config.watch.currency = market.pair[1];
+		               _config.watch.currency = market.pair[0];
+		               _config.watch.asset = market.pair[1];
 		               let watchProp = _config.watch; 
 
 		               this.setScriptsProp(scripts, watchProp);
@@ -227,8 +227,8 @@ const importer = ({
             } else { // write config for all pairs
 	           marketData.markets.forEach(market => {
 	               _config.watch.exchange =  exchange;
-		           _config.watch.asset = market.pair[0];
-		           _config.watch.currency = market.pair[1];
+		           _config.watch.currency = market.pair[0];
+		           _config.watch.asset = market.pair[1];
 		           let watchProp = _config.watch; 
 
 		           this.setScriptsProp(scripts, watchProp);
@@ -324,16 +324,16 @@ const importer = ({
             var exchange = null;
             var from = null;
             var to = null;
-            var asset = null;
-            var currency = null;
+            var currency = null; // the left part of the market pair ETH-NULS -> currency = ETH
+            var asset = null; // the right part of the market pair ETH-NULS -> asset = NULS
             if (program.args.length == 5) {
                 exchange = program.args[0];
                 if(!this.isValidExchange(exchange)) {
                     console.log("Exchange name is not valid");
                     return;
                 }
-                asset = program.args[1];
-                currency = program.args[2];
+                currency = program.args[1];
+                asset = program.args[2];
 
                 if(!this.isValidAssetCurrencyPair(exchange, asset, currency)) {
                     console.log("Asset currency pair " + asset + "-" + currency + " for exchange " + exchange + " is not valid");
@@ -355,18 +355,18 @@ const importer = ({
                 }
                 console.log("Condition 0-0");
                 console.log("Generate config for this pair for this exchange in the given daterange");
-                // Example 1: npm run import -e binance -a BNB -c BTC -f 2014-01-01 -t 2014-03-01
-                // Example 2: npm run import -e binance -a ETH -c BTC -f "2014-01-01 09:12:32" -t "2014-03-01 07:12:45"
+                // Example 1: npm run import -e binance -c BNB -a BTC -f 2014-01-01 -t 2014-03-01
+                // Example 2: npm run import -e binance -c ETH -a BTC -f "2014-01-01 09:12:32" -t "2014-03-01 07:12:45"
 
                 this.generateAllConfigs(exchange, asset, currency, from, to);
             
             } else if (program.args.length == 4) {
                 exchange = program.args[0];
                 if(this.isValidExchange(exchange)) {
-                    asset = program.args[1];
+                    currency = program.args[1];
 
                     if(!this.isValidAssetCurrencyPair(exchange, asset, currency)) {
-                         console.log("Asset currency pair " + asset + "-" + currency + " for exchange " + exchange + " is not valid");
+                         console.log("Currency asset pair " + currency + "-" + asset + " for exchange " + exchange + " is not valid");
                         return;
                     }
 
@@ -384,17 +384,17 @@ const importer = ({
                         return;
                     }
                     console.log("Condition 0-2");
-                    console.log("Generate config for all currencies against this specific asset for this exchange in the given daterange");
+                    console.log("Generate config for all assets against this specific currency for this exchange in the given daterange");
                     // Example: node import -e exchange -a ETH -f "2019-01-01" -t "2019-03-01"
                     //
                     this.generateAllConfigs(exchange, asset, currency, from, to);
                 } else {
                     exchange = null;
-                    asset = program.args[0];
-                    currency = program.args[1];
+                    currency = program.args[0];
+                    asset = program.args[1];
 
                     if(!this.isValidAssetCurrencyPair(exchange, asset, currency)) {
-                        console.log("Asset currency pair " + asset + "-" + currency + " for exchange " + exchange + " is not valid");
+                        console.log("Currency asset pair " + currency + "-" + asset + " for exchange " + exchange + " is not valid");
                         return;
                     }
 
