@@ -21,7 +21,7 @@ def make_payload(exchange, market):
         final_columns += formatted_columns[70:79]
         final_columns += formatted_columns[80:89]
         final_columns += formatted_columns[93:99]
-        print(len(final_columns))
+        #print(len(final_columns))
 
 
         payload = {
@@ -36,6 +36,7 @@ def make_payload(exchange, market):
                         "low|{}".format(candle),
                         "close|{}".format(candle),
                         "volume|{}".format(candle),
+                        "change|{}".format(candle),
                         "ROC|{}".format(candle),
                         "Recommend.Other|{}".format(candle),
                         "Recommend.All|{}".format(candle),
@@ -138,6 +139,7 @@ def get_resp(exchange, market, candle):
         url = "https://scanner.tradingview.com/crypto/scan"
 
         payload = make_payload(exchange, market)
+        print(payload)
         resp = requests.post(url,headers=headers,data=json.dumps(payload)).json()
         
         return resp 
@@ -151,13 +153,14 @@ def get_signal(exchange, market, candle, signal_id, log=False):
         return(signal)
 
 if __name__ == "__main__":
+        print(len(sys.argv))
         if len(sys.argv) >= 4:
             exchange = sys.argv[1]
             market = sys.argv[2]
             candle = sys.argv[3]
         else:
             exchange = "BINANCE"
-            market = "ETHBTC"
+            market = "XLMBTC"
             candle = 5 #Represented in minutes
 
         resp = get_resp(exchange, market, candle)

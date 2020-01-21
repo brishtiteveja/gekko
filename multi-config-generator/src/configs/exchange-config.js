@@ -1,6 +1,7 @@
 const exchangeConfig = {
 	exchanges: [ "binance",
-		         "coinbase"
+		         "gdax",
+                 "coinbase"
 		       ]
 }
 

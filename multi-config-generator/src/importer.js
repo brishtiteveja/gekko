@@ -59,7 +59,7 @@ const importer = ({
             exchange.pairs.forEach(watchProp => {
 		        watchProp.exchange = exchangeKey;
                 let {strategies, ...watch} = watchProp;//Ommit strategies
-		_config.watch = watch;
+		        _config.watch = watch;
                 this.writeCurrencyConfig(_config, watchProp);
             });
         });
@@ -142,7 +142,7 @@ const importer = ({
         return _config;
     },
     setRunAllScriptsCommand(scripts) {
-        var runAllCommand = `npm-run-all --parallel `;
+        var runAllCommand = `npm-run-all --parallel --max-parallel 10 `;
         const configFiles = this.getConfigFilesSorted(CONFIGS_DIR_DEST_PATH);
         configFiles.forEach(file => {
             runAllCommand += `${file.fileName} `;
@@ -273,7 +273,13 @@ const importer = ({
         var now, yyyy, mm, dd, hh, mn, ss, ct;
         now = new Date(); 
         yyyy = now.getUTCFullYear();
-        mm = now.getUTCMonth() + 1 - diff;
+        mm = now.getUTCMonth() + 1;
+        if (mm - diff > 0) {
+            mm = mm - diff;
+        } else {
+            yyyy = yyyy - 1;
+            mm = mm - diff + 12;
+        }
         dd = now.getUTCDate();
 
 
@@ -319,7 +325,7 @@ const importer = ({
         gekkoPath = gekko;
         var runScripts = null;
 	    if(program.args.length > 0) {
-	        console.log(program.args);
+	        //console.log(program.args);
 
             var exchange = null;
             var from = null;
@@ -377,16 +383,26 @@ const importer = ({
 
                     if (!this.isValidDate(from)) {
                         console.log("Daterange from is not valid");
-                        return;
                     }
                     if (!this.isValidDate(to)) {
                         console.log("Daterange to is not valid");
-                        return;
                     }
-                    console.log("Condition 0-2");
-                    console.log("Generate config for all assets against this specific currency for this exchange in the given daterange");
-                    // Example: node import -e exchange -a ETH -f "2019-01-01" -t "2019-03-01"
-                    //
+
+                    if (!this.isValidDate(from) && program.args[3] === 'now'){
+                        from = this.getTimeMonthsAgo(3); // 3 month ago 
+                        to = this.getCurrentTime();
+                        currency = program.args[1];
+                        asset = program.args[2];
+                        console.log("Condition 0-3");
+                        console.log("Generate config for currency and asset for this exchange from ");
+                        // Example: node import -e binance -c USDT -a BTC -t now 
+                        //
+                    } else {
+                        console.log("Condition 0-2");
+                        console.log("Generate config for all assets against this specific currency for this exchange in the given daterange");
+                        // Example: node import -e exchange -a ETH -f "2019-01-01" -t "2019-03-01"
+                        //
+                    }
                     this.generateAllConfigs(exchange, asset, currency, from, to);
                 } else {
                     exchange = null;

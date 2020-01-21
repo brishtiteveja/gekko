@@ -84,7 +84,7 @@ config.adviceLogger = {
 
 
 config.candleWriter = {
-  enabled: false
+  enabled: true 
 }
 
 config.adviceWriter = {
