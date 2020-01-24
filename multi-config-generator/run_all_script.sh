@@ -60,4 +60,5 @@ do
        echo "finished importing"
        echo "--------------------------------"
     fi
+    sleep 1m
 done
