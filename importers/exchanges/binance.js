@@ -8,6 +8,9 @@ var dirs = util.dirs();
 
 var Fetcher = require(dirs.exchanges + 'binance');
 
+var Reader = require(dirs.plugins + config.adapter + '/reader');
+reader = new Reader;
+
 util.makeEventEmitter(Fetcher);
 
 var end = false;
@@ -16,9 +19,24 @@ var from = false;
 
 var fetcher = new Fetcher(config.watch);
 
+var date = (t) => {
+    return moment.unix(t).format();
+}
+
 var fetch = () => {
   fetcher.import = true;
-  fetcher.getTrades(from, handleFetch);
+
+  console.log("Fetching now");
+  console.log("from = " + from.format());
+  console.log("to = " + end.format());
+
+  var startTime = from;
+  var endTime = end;
+  reader.getAllGaps(from, end, function(gaps) {
+    console.log("gaps");
+    console.log(gaps);
+    fetcher.getTrades(from, end, handleFetch);
+  });
 };
 
 var handleFetch = (err, trades) => {
@@ -26,7 +44,7 @@ var handleFetch = (err, trades) => {
     log.error(`There was an error importing from Binance ${err}`);
     fetcher.emit('done');
     return fetcher.emit('trades', []);
-}
+  }
 
   if (trades.length > 0) {
     var last = moment.unix(_.last(trades).date).utc();

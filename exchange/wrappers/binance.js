@@ -1,4 +1,5 @@
 const moment = require('moment');
+const util = require("../../core/util.js");
 const _ = require('lodash');
 
 const Errors = require('../exchangeErrors');
@@ -8,6 +9,10 @@ const retry = exchangeUtils.retry;
 const scientificToDecimal = exchangeUtils.scientificToDecimal;
 
 const Binance = require('binance');
+
+var dirs = util.dirs();
+var config = util.getConfig();
+var adapter = config[config.adapter];
 
 const Trader = function(config) {
   _.bindAll(this, [
@@ -134,7 +139,7 @@ Trader.prototype.handleResponse = function(funcName, callback) {
   }
 };
 
-Trader.prototype.getTrades = function(since, callback, descending) {
+Trader.prototype.getTrades = function(since, end, callback, descending) {
   const processResults = (err, data) => {
     if (err) return callback(err);
 

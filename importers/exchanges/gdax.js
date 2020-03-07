@@ -13,6 +13,10 @@ const SCAN_ITER_SIZE = 50000;
 const BATCH_ITER_SIZE = BATCH_SIZE * 10;
 
 const Fetcher = require(dirs.exchanges + 'gdax');
+
+var Reader = require(dirs.plugins + config.adapter + '/reader');
+reader = new Reader;
+
 const retry = require(dirs.exchanges + '../exchangeUtils').retry;
 
 Fetcher.prototype.getTrades = function(sinceTid, callback) {
@@ -33,8 +37,11 @@ Fetcher.prototype.getTrades = function(sinceTid, callback) {
     callback(null, result.reverse());
   };
 
+  log.debug("Getting Trades");
+  /*
   const fetch = cb => this.gdax_public.getProductTrades(this.pair, { after: sinceTid, limit: BATCH_SIZE }, this.processResponse('getTrades', cb));
   retry(null, fetch, handle);
+  */
 };
 
 Fetcher.prototype.findFirstTrade = function(sinceTs, callback) {
@@ -46,8 +53,12 @@ Fetcher.prototype.findFirstTrade = function(sinceTs, callback) {
   const handle = (err, data) => {
     if (err) return callback(err);
 
+    log.debug(data);
     let m = moment.utc(_.first(data).time);
     let ts = m.valueOf();
+
+    log.debug("since = " + moment(sinceTs).format());
+    log.debug("m = " + m.format());
     if (ts < sinceTs) {
       log.info(`First trade ID for batching found ${currentId - SCAN_ITER_SIZE}`);
       return callback(undefined, currentId - SCAN_ITER_SIZE);
@@ -57,6 +68,7 @@ Fetcher.prototype.findFirstTrade = function(sinceTs, callback) {
     log.debug(`Have trade id ${currentId} for date ${_.first(data).time} ${sinceM.from(m, true)} to scan`);
 
     let nextScanId = currentId - SCAN_ITER_SIZE;
+    log.debug("Next scan id = " + nextScanId);
     if (nextScanId <= SCAN_ITER_SIZE) {
       currentId = BATCH_ITER_SIZE;
       log.info(`First trade ID for batching found ${currentId}`);
@@ -111,13 +123,20 @@ let fetch = () => {
       if (err) return handleFetch(err);
 
       batchId = firstBatchId;
+      log.debug("Batch ID = " + batchId);
       fetcher.getTrades(batchId + 1, handleFetch);
     }
-    fetcher.findFirstTrade(from.valueOf(), process);
+
+    reader.getAllGaps(from, end, function(gaps) {
+        console.log("gaps");
+        console.log(gaps);
+    });
+    //fetcher.findFirstTrade(from.valueOf(), process);
   }
 }
 
 let handleFetch = (err, trades) => {
+  log.debug("Handling Fetch");
   if (err) {
     log.error(`There was an error importing from GDAX ${err}`);
     fetcher.emit('done');
@@ -141,6 +160,8 @@ let handleFetch = (err, trades) => {
       return fetch();
   }
 
+  log.debug("handle Batch ID = " + batchId); 
+
   batchId += BATCH_ITER_SIZE;
   lastId = batchId + 1;
 
@@ -157,7 +178,6 @@ let handleFetch = (err, trades) => {
 }
 
 module.exports = function (daterange) {
-
   from = daterange.from.utc().clone();
   end = daterange.to.utc().clone();
 

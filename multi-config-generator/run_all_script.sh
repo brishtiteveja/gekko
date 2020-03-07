@@ -1,6 +1,6 @@
 #!/bin/sh
 
-min_diff=15
+min_diff=120
 
 get_time_minutes_ago() {
    mdiff=$1 
@@ -53,6 +53,7 @@ do
        echo $from
        echo $to
        npm run import -e binance -c BTC -f $from -t $to
+       npm run import -e binance -c USDT -f $from -t $to
 
        echo "start importing"
        echo "npm run run-all > run_log.txt"

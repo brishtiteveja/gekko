@@ -1,3 +1,4 @@
+var moment = require('moment');
 var _ = require('lodash');
 var util = require('../../core/util.js');
 var config = util.getConfig();
@@ -10,6 +11,8 @@ var Reader = function() {
   _.bindAll(this);
   this.db = sqlite.initDB(true);
 }
+
+var thisReader = new Reader;
 
 
 // returns the most recent window complete candle
@@ -76,6 +79,103 @@ Reader.prototype.mostRecentWindow = function(from, to, next) {
 
   })
 }
+
+var date = function(t) {
+    return moment.unix(t).format();
+}
+
+Reader.prototype.findGaps = function(rows, from, to) {
+    var gaps = [];
+    var mid = (from + to)/2;
+    var diff = 60;
+
+    var nm = 0;//flag to figure out gap
+
+    var lastTime = null;
+    if (rows.length >= 1)
+        lastTime = rows[0].start - diff; // variable to store the gap start
+    for(var t=from, i=0; t<=to; t+=diff) {
+        var r = null;
+        if (rows[i] == null) {
+            if(i+1 !== rows.length) { // last gap
+                var gap = {}; 
+                gap['start'] = t;
+                gap['startDate'] = date(t);
+                gap['end'] = to;
+                gap['endDate'] = date(to);
+                gaps.push(gap);
+            }
+            break;
+        } else {
+            r = rows[i].start;
+        }
+
+        if (r === t) {
+            // get the next element in the row
+            i += 1;
+            lastTime = t;
+
+            if (nm != 0) { // gap ends because start and time matched again, use the current time to determine the end of the gap
+                var tt = t - diff; 
+                if (gap != null) {
+                    gap['end'] = tt;
+                    gap['endDate'] = date(tt);
+                    gaps.push(gap);
+                }
+            }
+            nm = 0;
+        } else {
+
+            if (nm == 0) { // start and time did not match, therefore gap exists, use the last available time to determine the start of the gap
+                var tt = lastTime + diff; 
+                var gap = {}; 
+                gap['start'] = tt;
+                gap['startDate'] = date(tt);
+            }
+
+            nm += 1;
+        }
+    }
+    return(gaps);
+}
+
+// returns the most recent window complete candle
+// windows within `from` and `to`
+Reader.prototype.getAllGaps = function(from, to, next) {
+  to = to.unix();
+  from = from.unix();
+
+  var maxAmount = to - from + 1;
+
+  this.db.all(`
+    SELECT start from ${sqliteUtil.table('candles')}
+    WHERE start <= ${to} AND start >= ${from}
+  `, function(err, rows) {
+    if(err) {
+
+      // bail out if the table does not exist
+      if(err.message.split(':')[1] === ' no such table')
+        return next(false);
+
+      log.error(err);
+      return util.die('DB error while reading mostRecentWindow');
+    }
+
+    // no candles are available
+    if(rows.length === 0) {
+      return next(false);
+    }
+
+    console.log(rows.length);
+    console.log("from = " + moment.unix(from).utc().format());
+    console.log("to = " + moment.unix(to).utc().format());
+    var gaps = thisReader.findGaps(rows, from, to);
+    next(gaps)
+
+    return(gaps);
+  })
+}
+
 
 Reader.prototype.tableExists = function(name, next) {
 
