@@ -14,6 +14,9 @@ const BATCH_ITER_SIZE = BATCH_SIZE * 10;
 
 const Fetcher = require(dirs.exchanges + 'gdax');
 
+var allGaps = [];
+var currentGapID = null;
+var currentGap = null;
 var Reader = require(dirs.plugins + config.adapter + '/reader');
 reader = new Reader;
 
@@ -38,11 +41,74 @@ Fetcher.prototype.getTrades = function(sinceTid, callback) {
   };
 
   log.debug("Getting Trades");
-  /*
-  const fetch = cb => this.gdax_public.getProductTrades(this.pair, { after: sinceTid, limit: BATCH_SIZE }, this.processResponse('getTrades', cb));
+  const fetch = cb => {
+      console.log("Batch Id = " + sinceTid);
+      this.gdax_public.getProductTrades(this.pair, { after: sinceTid, limit: BATCH_SIZE }, this.processResponse('getTrades', cb));
+  };
   retry(null, fetch, handle);
-  */
 };
+
+Fetcher.prototype.findFirstTradeIDsForGaps = function(sinceTs, callback) {
+  let currentId = 0;
+  let sinceM = moment.unix(sinceTs).utc();
+  let scanSize = -1;
+  console.log("sinceM = " + sinceM.format());
+
+
+  const handle = (err, data) => {
+    if (err) return callback(err);
+
+    let m = moment.utc(_.first(data).time);
+    let ts = m.unix();
+    console.log("current trade time = " + moment.unix(ts).utc().format());
+    console.log("search target trade time = " + moment.unix(sinceTs).utc().format());
+    console.log("time diff = " + moment.unix(ts).from(moment.unix(sinceTs), true));
+    let tsDiff = (ts - sinceTs)/2; // exponentially decreasing 
+    scanSize = tsDiff;
+
+    if (ts < sinceTs) {
+      var firstBatchID = currentId - SCAN_ITER_SIZE; 
+      log.info(`First trade ID for batching for gap no. ${currentGapID} found ${currentId - SCAN_ITER_SIZE}`);
+
+      currentGap['firstBatchID'] = firstBatchID;
+      currentGap['firstBatchTime'] = m.format();
+      currentGapID += 1;
+      currentGap = allGaps[currentGapID];
+
+      if (currentGapID == allGaps.length) {
+        return callback(undefined, undefined);
+      }
+          
+      console.log("sinceTS updated to " + sinceTs);
+      sinceTs = currentGap['start']
+
+      log.info(`§Scanning for the first trade ID for gapno. ${currentGapID}`);
+      log.info(currentGap);
+    }
+
+    currentId = _.first(data).trade_id;
+    log.debug(`Have trade id ${currentId} for date ${_.first(data).time}`);
+
+    let nextScanId = currentId - Math.floor(scanSize);
+
+    if (nextScanId < 0) {
+        console.log(scanSize);
+        console.log(nextScanId);
+        console.log(_.first(data));
+        currentGap['firstBatchID'] = 0;
+        currentGap['firstBatchTime'] = moment.unix(sinceTs).utc().format();
+        return callback(undefined, undefined);
+    }
+
+    setTimeout(() => {
+      const fetch = cb => this.gdax_public.getProductTrades(this.pair, { after: nextScanId, limit: 1 }, this.processResponse('getTrades', cb));
+      retry(null, fetch, handle);
+    }, QUERY_DELAY);
+  }
+
+  const fetch = cb => this.gdax_public.getProductTrades(this.pair, { limit: 1 }, this.processResponse('getTrades', cb));
+  retry(null, fetch, handle);
+}
 
 Fetcher.prototype.findFirstTrade = function(sinceTs, callback) {
   let currentId = 0;
@@ -53,12 +119,9 @@ Fetcher.prototype.findFirstTrade = function(sinceTs, callback) {
   const handle = (err, data) => {
     if (err) return callback(err);
 
-    log.debug(data);
     let m = moment.utc(_.first(data).time);
     let ts = m.valueOf();
 
-    log.debug("since = " + moment(sinceTs).format());
-    log.debug("m = " + m.format());
     if (ts < sinceTs) {
       log.info(`First trade ID for batching found ${currentId - SCAN_ITER_SIZE}`);
       return callback(undefined, currentId - SCAN_ITER_SIZE);
@@ -68,7 +131,6 @@ Fetcher.prototype.findFirstTrade = function(sinceTs, callback) {
     log.debug(`Have trade id ${currentId} for date ${_.first(data).time} ${sinceM.from(m, true)} to scan`);
 
     let nextScanId = currentId - SCAN_ITER_SIZE;
-    log.debug("Next scan id = " + nextScanId);
     if (nextScanId <= SCAN_ITER_SIZE) {
       currentId = BATCH_ITER_SIZE;
       log.info(`First trade ID for batching found ${currentId}`);
@@ -114,6 +176,7 @@ let fetch = () => {
   // We are in the sub-iteration step for a given batch
   if (lastId) {
     setTimeout(() => {
+      console.log("Get Trade timeout. " + lastId);
       fetcher.getTrades(lastId, handleFetch);
     }, QUERY_DELAY);
   }
@@ -121,17 +184,43 @@ let fetch = () => {
   else {
     let process = (err, firstBatchId) => {
       if (err) return handleFetch(err);
-
-      batchId = firstBatchId;
-      log.debug("Batch ID = " + batchId);
-      fetcher.getTrades(batchId + 1, handleFetch);
+      
+      if (allGaps.length > 0) { 
+        console.log("Found startBatchID for all gaps");
+        console.log(firstBatchId);
+        console.log(allGaps);
+      } else {
+        batchId = firstBatchId;
+        fetcher.getTrades(batchId + 1, handleFetch);
+      }
     }
 
-    reader.getAllGaps(from, end, function(gaps) {
-        console.log("gaps");
-        console.log(gaps);
-    });
-    //fetcher.findFirstTrade(from.valueOf(), process);
+    // check first time finding the gaps in the data
+    if (allGaps.length == 0) {
+      reader.getAllGaps(from, end, function(gaps) {
+        var firstBatchId = 0;
+        var err = null;
+        //print all gaps
+        console.log(allGaps);
+  
+        if (gaps.length > 0) {
+          allGaps = gaps.reverse();
+          currentGapID = 0;
+          currentGap = allGaps[currentGapID];
+
+          var sinceTs = currentGap['start'];
+
+          log.info(`§Scanning for the first trade ID for gapno. ${currentGapID}`);
+          log.info(currentGap);
+
+          fetcher.findFirstTradeIDsForGaps(sinceTs, process);
+        } else {
+          log.info("No gaps found for this pair");
+          fetcher.findFirstTrade(from.valueOf(), process);
+        }
+      });
+    } else {
+    }
   }
 }
 
@@ -145,6 +234,7 @@ let handleFetch = (err, trades) => {
 
   if (trades.length) {
     batch = trades.concat(batch);
+    console.log("batch length = " + batch.length);
 
     let last = moment.unix(_.first(trades).date).utc();
     lastId = _.first(trades).tid
@@ -156,14 +246,34 @@ let handleFetch = (err, trades) => {
     }
 
     // still doing sub-iteration in the batch
-    if (lastId >= (batchId - BATCH_ITER_SIZE) && last >= from)
-      return fetch();
+    if (lastId >= (batchId - BATCH_ITER_SIZE) && last >= from) {
+      console.log("batchId = " + batchId);
+      if (currentGap != null) {
+        var currentGapStart = currentGap['start'] * 1000;
+        var currentGapEnd = currentGap['end'] * 1000;
+        console.log("Current Gap start = " + currentGapStart);
+        console.log("Current Gap start date = " + moment.unix(currentGapStart/1000).utc().format());
+        console.log("Current Gap end = " + currentGapEnd);
+        console.log("Current Gap end date = " + moment.unix(currentGapEnd/1000).utc().format());
+        console.log("Current lastId = " + lastId);
+        console.log("Current last = " + last/1000);
+        console.log("Current last = " + moment.unix(last/1000).utc().format());
+        // if within gap interval
+        if (last >= currentGapStart && last <= currentGapEnd) {
+          return fetch();
+        } else {
+          console.log("Outside of gap");
+        }
+      }
+    }
   }
 
-  log.debug("handle Batch ID = " + batchId); 
 
-  batchId += BATCH_ITER_SIZE;
-  lastId = batchId + 1;
+  if (currentGap == null) {
+    batchId += BATCH_ITER_SIZE;
+    lastId = batchId + 1;
+  } else {
+  }
 
   if (latestMoment >= end) {
     fetcher.emit('done');

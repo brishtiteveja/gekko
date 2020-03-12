@@ -81,7 +81,7 @@ Reader.prototype.mostRecentWindow = function(from, to, next) {
 }
 
 var date = function(t) {
-    return moment.unix(t).format();
+    return moment.unix(t).utc().format();
 }
 
 Reader.prototype.findGaps = function(rows, from, to) {
@@ -92,13 +92,19 @@ Reader.prototype.findGaps = function(rows, from, to) {
     var nm = 0;//flag to figure out gap
 
     var lastTime = null;
-    if (rows.length >= 1)
-        lastTime = rows[0].start - diff; // variable to store the gap start
+    var lastId = 0;
+    if (rows.length >= 1) {
+        if (rows[0] != null)
+            lastId = rows[0].id
+        lastTime = from-diff; // variable to store the gap start
+    }
     for(var t=from, i=0; t<=to; t+=diff) {
         var r = null;
+        var id = null;
         if (rows[i] == null) {
             if(i+1 !== rows.length) { // last gap
                 var gap = {}; 
+                gap['lastId'] = lastId;
                 gap['start'] = t;
                 gap['startDate'] = date(t);
                 gap['end'] = to;
@@ -108,6 +114,7 @@ Reader.prototype.findGaps = function(rows, from, to) {
             break;
         } else {
             r = rows[i].start;
+            id = rows[i].id;
         }
 
         if (r === t) {
@@ -129,12 +136,14 @@ Reader.prototype.findGaps = function(rows, from, to) {
             if (nm == 0) { // start and time did not match, therefore gap exists, use the last available time to determine the start of the gap
                 var tt = lastTime + diff; 
                 var gap = {}; 
+                gap['lastId'] = lastId;
                 gap['start'] = tt;
                 gap['startDate'] = date(tt);
             }
 
             nm += 1;
         }
+        lastId = id;
     }
     return(gaps);
 }
@@ -148,8 +157,8 @@ Reader.prototype.getAllGaps = function(from, to, next) {
   var maxAmount = to - from + 1;
 
   this.db.all(`
-    SELECT start from ${sqliteUtil.table('candles')}
-    WHERE start <= ${to} AND start >= ${from}
+    SELECT id, start from ${sqliteUtil.table('candles')}
+    WHERE start <= ${to} AND start >= ${from} ORDER BY start ASC
   `, function(err, rows) {
     if(err) {
 
@@ -166,10 +175,17 @@ Reader.prototype.getAllGaps = function(from, to, next) {
       return next(false);
     }
 
-    console.log(rows.length);
-    console.log("from = " + moment.unix(from).utc().format());
-    console.log("to = " + moment.unix(to).utc().format());
+    log.debug("Finding Gaps");
+    log.debug("Total rows = " + rows.length);
+    log.debug("from = " + moment.unix(from).utc().format('Z'));
+    log.debug("to = " + moment.unix(to).utc().format('Z'));
     var gaps = thisReader.findGaps(rows, from, to);
+    if (gaps.length >= 0) {
+        log.debug("Found Gaps:");
+        log.debug(gaps);
+    } else {
+        log.debug("No Gaps.");
+    }
     next(gaps)
 
     return(gaps);
