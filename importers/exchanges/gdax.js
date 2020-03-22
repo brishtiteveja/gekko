@@ -52,8 +52,6 @@ Fetcher.prototype.findFirstTradeIDsForGaps = function(sinceTs, callback) {
   let currentId = 0;
   let sinceM = moment.unix(sinceTs).utc();
   let scanSize = -1;
-  console.log("sinceM = " + sinceM.format());
-
 
   const handle = (err, data) => {
     if (err) return callback(err);
@@ -76,6 +74,8 @@ Fetcher.prototype.findFirstTradeIDsForGaps = function(sinceTs, callback) {
       currentGap = allGaps[currentGapID];
 
       if (currentGapID == allGaps.length) {
+        // reset gap id for import start
+        currentGapID = 0;
         return callback(undefined, undefined);
       }
           
@@ -97,6 +97,8 @@ Fetcher.prototype.findFirstTradeIDsForGaps = function(sinceTs, callback) {
         console.log(_.first(data));
         currentGap['firstBatchID'] = 0;
         currentGap['firstBatchTime'] = moment.unix(sinceTs).utc().format();
+        // reset gap id for import start
+        currentGapID = 0;
         return callback(undefined, undefined);
     }
 
@@ -173,10 +175,11 @@ let retryForever = {
 let fetch = () => {
   fetcher.import = true;
 
+  console.log("lastId for null check =" + lastId); 
   // We are in the sub-iteration step for a given batch
   if (lastId) {
     setTimeout(() => {
-      console.log("Get Trade timeout. " + lastId);
+      console.log("Last ID before continued fetching = " + lastId);
       fetcher.getTrades(lastId, handleFetch);
     }, QUERY_DELAY);
   }
@@ -185,10 +188,14 @@ let fetch = () => {
     let process = (err, firstBatchId) => {
       if (err) return handleFetch(err);
       
-      if (allGaps.length > 0) { 
-        console.log("Found startBatchID for all gaps");
-        console.log(firstBatchId);
+      if (allGaps.length > 0) { // When gap exists in the imported data
+        log.info("Found startBatchID for all gaps");
         console.log(allGaps);
+        allGaps = allGaps.reverse();
+        log.info("Importing trades for gap id." + currentGapID);
+        currentGap = allGaps[currentGapID];
+        batchId = currentGap["firstBatchID"];
+        fetcher.getTrades(batchId + 1, handleFetch);
       } else {
         batchId = firstBatchId;
         fetcher.getTrades(batchId + 1, handleFetch);
@@ -220,6 +227,7 @@ let fetch = () => {
         }
       });
     } else {
+        console.log("somehow here");
     }
   }
 }
@@ -231,13 +239,22 @@ let handleFetch = (err, trades) => {
     fetcher.emit('done');
     return fetcher.emit('trades', []);
   }
+    
+  let last = null;
+  let currentGapStart = null;
+  let currentGapEnd = null;
 
   if (trades.length) {
     batch = trades.concat(batch);
     console.log("batch length = " + batch.length);
 
-    let last = moment.unix(_.first(trades).date).utc();
+    last = moment.unix(_.first(trades).date).utc();
     lastId = _.first(trades).tid
+
+    if (allGaps.length > 0 && currentGap != null) {
+        currentGapStart = moment.unix(currentGap['start']).utc();
+        currentGapEnd = moment.unix(currentGap['end']).utc();
+    }
 
     let latestTrade = _.last(trades);
     if (!latestId || latestTrade.tid > latestId) {
@@ -247,35 +264,52 @@ let handleFetch = (err, trades) => {
 
     // still doing sub-iteration in the batch
     if (lastId >= (batchId - BATCH_ITER_SIZE) && last >= from) {
-      console.log("batchId = " + batchId);
-      if (currentGap != null) {
-        var currentGapStart = currentGap['start'] * 1000;
-        var currentGapEnd = currentGap['end'] * 1000;
-        console.log("Current Gap start = " + currentGapStart);
-        console.log("Current Gap start date = " + moment.unix(currentGapStart/1000).utc().format());
-        console.log("Current Gap end = " + currentGapEnd);
-        console.log("Current Gap end date = " + moment.unix(currentGapEnd/1000).utc().format());
-        console.log("Current lastId = " + lastId);
-        console.log("Current last = " + last/1000);
-        console.log("Current last = " + moment.unix(last/1000).utc().format());
+      if (allGaps.length > 0 && currentGap != null) {
+        console.log("last = " + last.format());
+        console.log("last Unix = " + last.unix());
+        console.log("currentGapStart  = " + currentGapStart.format());
+        console.log("currentGapEnd  = " + currentGapEnd.format());
         // if within gap interval
-        if (last >= currentGapStart && last <= currentGapEnd) {
+        if (last <= currentGapEnd) {
+          log.info("Still doing sub-iteration in the batch in gap id. " + currentGapID);
           return fetch();
         } else {
-          console.log("Outside of gap");
         }
+      } else {
+        console.log("Still doing sub-iteration in the batch (no gap).");
+        return fetch();
       }
     }
   }
 
+  console.log("trade length = " + trades.length);
+  console.log("last = " + last);
+  console.log("last = " + last.unix());
+  console.log("currentGapEnd = " + currentGapEnd);
 
-  if (currentGap == null) {
+  // set up the new batch id
+  if (allGaps.length == 0 || (last != null && last <= currentGapEnd)) { 
+    if (allGaps.length == 0) {
+      log.info("Importing for the next batch (no gap)");
+    } else {
+      log.info("Importing for the next batch for current gap id. " + currentGapID);
+    }
     batchId += BATCH_ITER_SIZE;
     lastId = batchId + 1;
-  } else {
+    console.log("\n batch id = " + batchId);
+    console.log("\n last id = " + lastId);
+  } else if (currentGapID < allGaps.length) { // when iterating through gap
+    log.info("Outside of current gap");
+    console.log("Start importing for next gap after increasing the currentGapID." + currentGapID);
+    currentGapID += 1;
+    currentGap = allGaps[currentGapID];
+    console.log(currentGap);
+    console.log("Setting the first batch id for the next gap id. " + currentGapID);
+    batchId = currentGap['firstBatchID'];
+    lastId = batchId + 1;
   }
 
-  if (latestMoment >= end) {
+  if (latestMoment >= end || currentGapID == allGaps.length) {
     fetcher.emit('done');
   }
 
@@ -283,8 +317,10 @@ let handleFetch = (err, trades) => {
   let startUnix = from.unix();
   batch = _.filter(batch, t => t.date >= startUnix && t.date <= endUnix);
 
+  // process trades
   fetcher.emit('trades', batch);
   batch = [];
+
 }
 
 module.exports = function (daterange) {
