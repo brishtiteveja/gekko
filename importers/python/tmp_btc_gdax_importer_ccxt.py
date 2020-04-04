@@ -11,7 +11,7 @@ import pandas as pd
 #file root
 froot = os.path.dirname(os.path.abspath(__file__))
 #history root
-root = "/home/ubuntu/gekko/history/latest"
+root = "/home/ubuntu/gekko/history/latest/gdaxbtcusd"
 
 cur_datetime = datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 
@@ -20,7 +20,7 @@ conn = None
 
 # common constants
 batch_import_finished = False
-nprocesses = 5 
+nprocesses = 15 
 
 msec = 1000
 minute = 60 * msec
@@ -55,12 +55,12 @@ search_timeframe['2min'] =  2 * minute
 search_timeframe['min'] =   minute 
     
 
-hold = 20 
+hold = 30 
 
 timeframe = '1m'
 now = None
 
-from_datetime = '2020-01-01 00:00:00'
+from_datetime = '2015-01-01 00:00:00'
 to_datetime = None
 
 last_starttime = []
@@ -506,7 +506,7 @@ def get_historical_data(exchange_id, from_datetime):
     markets = exchange.load_markets()
     market_pairs = list(markets.keys())
     #market_pairs = ['ATOM/BTC', 'KNC/BTC', 'ATOM/USD']
-    #market_pairs = ['KNC/USD']
+    market_pairs = ['BTC/USD']
 
     get_last_starttime_from_sql(exchange_id, market_pairs)
 

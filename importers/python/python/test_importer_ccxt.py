@@ -11,7 +11,7 @@ import pandas as pd
 #file root
 froot = os.path.dirname(os.path.abspath(__file__))
 #history root
-root = "/home/ubuntu/gekko/history/latest"
+root = "/home/ubuntu/gekko/history/test"
 
 cur_datetime = datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 
@@ -20,7 +20,7 @@ conn = None
 
 # common constants
 batch_import_finished = False
-nprocesses = 5 
+nprocesses = 15 
 
 msec = 1000
 minute = 60 * msec
@@ -55,7 +55,7 @@ search_timeframe['2min'] =  2 * minute
 search_timeframe['min'] =   minute 
     
 
-hold = 20 
+hold = 1 
 
 timeframe = '1m'
 now = None
@@ -301,6 +301,7 @@ def get_historical_data_from_timestamp(parallel_func_id, market_pair, exchange, 
                continue 
             '''
 
+            previous_from_timestamp = from_timestamp
             if len(ohlcvs) != 0:
                 print(ohlcvs[-1])
                 # updating from_timestamp
@@ -324,6 +325,17 @@ def get_historical_data_from_timestamp(parallel_func_id, market_pair, exchange, 
                     from_timestamp += search_timeframe[cur_timeframe] 
 
                 continue
+
+            
+            nfetch = len(ohlcvs)
+            req_len = (now - previous_from_timestamp) / (1000 * 60) 
+            req_len = int(req_len)
+            '''
+            if nfetch > req_len:
+                nfetch = req_len
+                print("\n***\n Required length in this cycle = ", req_len, "\n***\n")
+                ohlcvs = ohlcvs[0:nfetch]
+            '''
 
             print("Next from timestamp = ", from_timestamp)
             df = pd.DataFrame(ohlcvs, columns = columns)
@@ -507,6 +519,7 @@ def get_historical_data(exchange_id, from_datetime):
     market_pairs = list(markets.keys())
     #market_pairs = ['ATOM/BTC', 'KNC/BTC', 'ATOM/USD']
     #market_pairs = ['KNC/USD']
+    market_pairs = ['KNC/USD', 'BTC/USD', 'ATOM/BTC', 'KNC/BTC']
 
     get_last_starttime_from_sql(exchange_id, market_pairs)
 
@@ -520,7 +533,6 @@ def get_historical_data(exchange_id, from_datetime):
             if batch_import_finished == True:
                 # break this loop and start new import 
                 batch_import_finished = False
-                time.sleep(120)
                 print("Now sleeping for 1 minite.")
                 time.sleep(60)
                 print("Resuming import of all market pairs.")

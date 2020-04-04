@@ -15,8 +15,8 @@
     "remove-node_modules": "rm -rf node_modules || rd /s /q node_modules",
     "remove-configs": "rm -rf configs || rd /s /q configs",
     "remove-configs-win": "rd /s /q configs",
-    "run-all": "npm-run-all --parallel --max-parallel 10 USD-ALGO.gda BTC-ATOM.gda USDC-BAT.gda BTC-BCH.gda USD-BCH.gda USD-BTC.bin USD-BTC.gda USDC-BTC.gda USDC-CVC.gda USDC-DAI.gda BTC-DASH.gda USD-DASH.gda USDC-DNT.gda BTC-EOS.gda BTC-ETC.gda USD-ETC.gda BTC-ETH.gda USD-ETH.gda USDC-ETH.gda USDC-GNT.gda BTC-KNC.gda USD-KNC.gda USD-LINK.gda USDC-LOOM.gda BTC-LTC.gda USD-LTC.gda USDC-MANA.gda USD-OXT.gda BTC-REP.gda USD-REP.gda BTC-XLM.gda USD-XLM.gda BTC-XRP.gda USD-XRP.gda BTC-XTZ.gda USD-XTZ.gda BTC-ZEC.gda USD-ZEC.gda BTC-ZRX.gda USD-ZRX.gda",
-    "USD-BTC.bin": "node /home/ubuntu/gekko/gekko --config /home/ubuntu/gekko/multi-config-generator/configs/USD/USD-BTC.bin.js --import"
+    "run-all": "npm-run-all --parallel --max-parallel 10 USDT-BTC.bin",
+    "USDT-BTC.bin": "node /home/ubuntu/gekko/gekko --config /home/ubuntu/gekko/multi-config-generator/configs/USDT/USDT-BTC.bin.js --import"
   },
   "dependencies": {
     "fs-extra": "^5.0.0"

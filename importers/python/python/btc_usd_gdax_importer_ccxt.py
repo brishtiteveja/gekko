@@ -11,7 +11,7 @@ import pandas as pd
 #file root
 froot = os.path.dirname(os.path.abspath(__file__))
 #history root
-root = "/home/ubuntu/gekko/history/latest"
+root = "../../history/latest/gdaxbtcusd"
 
 cur_datetime = datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 
@@ -20,7 +20,7 @@ conn = None
 
 # common constants
 batch_import_finished = False
-nprocesses = 5 
+nprocesses = 15 
 
 msec = 1000
 minute = 60 * msec
@@ -55,15 +55,15 @@ search_timeframe['2min'] =  2 * minute
 search_timeframe['min'] =   minute 
     
 
-hold = 20 
+hold = 5 
 
 timeframe = '1m'
 now = None
 
-from_datetime = '2020-01-01 00:00:00'
+from_datetime = '2015-04-01 00:00:00'
 to_datetime = None
 
-last_starttime = []
+last_starttime = {} 
 exchange_id = 'coinbasepro'
 
 gekko_columns = ['id', 'start', 'open', 'high', 'low', 'close', 'vwp', 'volume', 'trades']
@@ -139,27 +139,94 @@ def create_table_with_name(conn, table_name, database):
     else:
        print("Error! cannot create the database connection.")
 
+def drop_table_with_name(conn, table_name, database):
+    if conn is not None:
+        if check_table_exists(conn, table_name):
+            print('Table', table_name, 'already exists.')
+            c = conn.cursor()
+			
+            query = "DROP TABLE " + table_name 
+            #get the count of tables with the name
+            c.execute(query)
+        else:
+            #create tables
+            print('Table', table_name, 'does not exist to drop.')
+    else:
+       print("Error! cannot drop table from database.")
+
 def save_data_to_table(df, table_name, database):
     global conn 
     conn = create_connection(database)
     create_table_with_name(conn, table_name, database)
     try:
-        df.to_sql(table_name, con=conn, index=True, index_label='id', if_exists='append') 
-        print('Success writing to database')
+        print("Getting last few rows and trying to append in the table")
+        existing = pd.read_sql("SELECT * from " + table_name + " order by start desc limit 1", con=conn)
+        last_start_in_df = max(existing["start"])
+        existing = existing.set_index("start")
+        to_insert = df.set_index("start")
+
+        new = existing.append(to_insert)
+        new = new[~new.duplicated(keep='first')]
+        new = new.drop("id", axis=1)
+        new = new.reset_index().rename(columns={"index":"start"})
+        new = new.drop_duplicates(subset="start")
+        new = new.reset_index().rename(columns={"index":"id"})
+        new = new.drop("id", axis=1)
+        new["start"] = new["start"]/msec
+        new = new[new["start"] > last_start_in_df]
+
+        print(new.shape)
+        if new.shape[0] > 0:
+            new.to_sql(table_name, con=conn, index=False, if_exists='append') 
+            print('Success writing to database')
+        else:
+            print("No new data to append to the table yet.")
     except Exception as e:
         print("Initial failure to append: {}\n".format(e))
         print("Attempting to rectify...")
         # this is problematic when existing table is very big
         existing = pd.read_sql("SELECT * from " + table_name, con=conn)
+        existing = existing.set_index("start")
 
-        to_insert = df.reset_index().rename(columns={'index':'id'})
-        mask = ~to_insert.id.isin(existing.id)
+        to_insert = df.set_index("start")
+
+        new = existing.append(to_insert)
+        new = new[~new.duplicated(keep='first')]
+        new = new.drop("id", axis=1)
+        new = new.reset_index().rename(columns={"index":"start"})
+        new = new.drop_duplicates(subset="start")
+        new = new.reset_index().rename(columns={"index":"id"})
+        new = new.drop("id", axis=1)
+        new["start"] = new["start"]/msec
+
         try:
-            to_insert.loc[mask].to_sql(table_name, con=conn, index=False, if_exists='append')
-            print("Successful deduplication.")
+            print("drop table")
+            c = conn.cursor()
+            try:
+                c.execute("DROP TABLE " + table_name + ";");
+            except Exception as e:
+                print("\nError occurred in dropping the table")
+                print(e)
+
+            try:
+                print("creating table")
+                create_table_with_name(conn, table_name, database)
+            except Exception as e:
+                print("\nError occurred in creating the table after dropping it.")
+                print(e)
+
+            print("writing the new table from pandas data frame")
+
+            new.to_sql(table_name, con=conn, index=False, if_exists="append") 
+            print("dropped and added updated table")
         except Exception as e2:
-            "Could not rectify duplicate entries. \n{}".format(e2)
+            print("Error occurred in saving the new table.")
+            print(e2)
         print('Success after dedupe')
+    except Exception as e:
+        print("Fake exception for testing.")
+        print(e)
+
 
 def get_table_name(market_pair):
     market_symbol = market_pair.split("/")[1] 
@@ -390,8 +457,8 @@ def parallel_history_func(i, exchange):
 
     from_datetime_pair = from_datetime
     # check whether already imported, then get last starttime
-    if len(last_starttime) > 0 and i < len(last_starttime):
-        from_datetime_pair = last_starttime[i]
+    #if len(last_starttime) > 0 and i < len(last_starttime):
+    from_datetime_pair = last_starttime[market_pair]
 
     get_historical_data_for_market_pair(i, market_pair, exchange, timeframe, from_datetime_pair, now) 
 
@@ -460,7 +527,12 @@ def get_last_starttime_from_sql(exchange_id, market_pairs):
     elif exchange_id == "binance":
         exchange_id = "binance_0.1"
     db_file = root + "/" + exchange_id + ".db"
-    conn = create_connection(db_file)
+    try:
+        conn = create_connection(db_file)
+    except Exception as e:
+        print(e)
+        print("Error creating connection")
+        sys.exit(1)
 
 
     for i, market_pair in enumerate(market_pairs):
@@ -469,13 +541,18 @@ def get_last_starttime_from_sql(exchange_id, market_pairs):
             query = "SELECT start from " + table_name + " ORDER BY start DESC limit 1"
             startDF= pd.read_sql(query, con=conn )
             start = startDF.start[0] 
-            starttime = datetime.datetime.utcfromtimestamp(start/1000).strftime("%Y-%m-%d %H:%M:%S")
-            last_starttime.append(starttime)
+            try:
+                starttime = datetime.datetime.utcfromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S")
+            except Exception as e:
+                print(e)
+                starttime = datetime.datetime.utcfromtimestamp(start/1000).strftime("%Y-%m-%d %H:%M:%S")
+
+            last_starttime[market_pair] = starttime
         else:
-            last_starttime.append(from_datetime)
+            last_starttime[market_pair] = from_datetime 
 
             print("market pair " + str(i) + ":" + market_pair)
-            print(last_starttime[i])
+            print(last_starttime[market_pair])
 
 def get_historical_data(exchange_id, from_datetime):
     if exchange_id == 'coinbasepro' :
@@ -506,25 +583,33 @@ def get_historical_data(exchange_id, from_datetime):
     markets = exchange.load_markets()
     market_pairs = list(markets.keys())
     #market_pairs = ['ATOM/BTC', 'KNC/BTC', 'ATOM/USD']
-    #market_pairs = ['KNC/USD']
-
-    get_last_starttime_from_sql(exchange_id, market_pairs)
+    market_pairs = ['BTC/USD']
 
     global batch_import_finished
     batch_import_finished = False 
+    initial = True
     while True:
-        run_parallel_market_import(exchange)
+        if initial:
+            get_last_starttime_from_sql(exchange_id, market_pairs)
+            if to_datetime == None:
+                now = exchange.milliseconds()
+            else:
+                now_datetime = to_datetime
+                now = exchange.parse8601(now_datetime)
+
+            run_parallel_market_import(exchange)
+            initial = False
 
         # run through this loop when current import phase is ongoing
-        while True:
-            if batch_import_finished == True:
-                # break this loop and start new import 
-                batch_import_finished = False
-                time.sleep(120)
-                print("Now sleeping for 1 minite.")
-                time.sleep(60)
-                print("Resuming import of all market pairs.")
-                break
+        if batch_import_finished == True:
+            # break this loop and start new import 
+            #time.sleep(10)
+            batch_import_finished = False
+            print("Now sleeping.")
+            time.sleep(20)
+            print("Resuming import of all market pairs.")
+            initial = True
+            
 
 # test importing 1m data from gdax using ccxt 
 def main():

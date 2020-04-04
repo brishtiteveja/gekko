@@ -1,6 +1,5 @@
 import os
 import sys
-import argparse
 import time
 import datetime
 import multiprocessing
@@ -61,10 +60,9 @@ timeframe = '1m'
 now = None
 
 from_datetime = '2020-01-01 00:00:00'
-to_datetime = None
-
 last_starttime = []
-exchange_id = 'coinbasepro'
+#exchange_id = 'coinbasepro'
+exchange_id = 'binance'
 
 gekko_columns = ['id', 'start', 'open', 'high', 'low', 'close', 'vwp', 'volume', 'trades']
 columns = ['start', 'open', 'high', 'low', 'close', 'volume']
@@ -492,15 +490,7 @@ def get_historical_data(exchange_id, from_datetime):
         })
 
     global now
-    if to_datetime == None:
-        now = exchange.milliseconds()
-    else:
-        now_datetime = to_datetime
-        now = exchange.parse8601(now_datetime)
-
-        print("User specified import Daterange is as follows:")
-        print("From date = ", from_datetime)
-        print("To date = ", to_datetime)
+    now = exchange.milliseconds()
 
     global markets, market_pairs
     markets = exchange.load_markets()
@@ -521,26 +511,10 @@ def get_historical_data(exchange_id, from_datetime):
                 # break this loop and start new import 
                 batch_import_finished = False
                 time.sleep(120)
-                print("Now sleeping for 1 minite.")
-                time.sleep(60)
-                print("Resuming import of all market pairs.")
                 break
 
 # test importing 1m data from gdax using ccxt 
 def main():
-    args = sys.argv
-    nargs = len(args)
-
-    if nargs >= 3:
-        arg_from = args[1]
-        arg_to = args[2]
-        global from_datetime, to_datetime
-        from_datetime = arg_from
-        to_datetime = arg_to
-
-        if nargs >= 4:
-            arg_exchange_id = args[3]
-
     get_historical_data(exchange_id, from_datetime)
 
 if __name__ == "__main__":
