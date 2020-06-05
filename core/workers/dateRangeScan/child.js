@@ -9,7 +9,7 @@ ipc.on('start', config => {
   util.setGekkoEnv('child-process');
 
   // force disable debug
-  config.debug = false;
+  config.debug = true;
 
   // persist config
   util.setConfig(config);
