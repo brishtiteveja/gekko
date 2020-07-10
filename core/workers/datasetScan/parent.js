@@ -46,9 +46,16 @@ module.exports = function(config, done) {
             if(err)
               return next();
     
-            var from = moment.utc(ranges.first).format("YYYY-MM-DD HH:mm:ss");
-            var to = moment.utc(ranges.to).format("YYYY-MM-DD HH:mm:ss");
-            console.log("Daterange: From = " + from + ", To = " + to);
+            console.log(ranges);
+            if(ranges[0]["from"] % 1 === 0) {
+            } else {
+                ranges[0]["from"] = ranges[0]["from"] * 1000;
+            }
+            console.log(ranges);
+            var from = moment.utc(ranges[0]["from"]*1000).format("YYYY-MM-DD HH:mm:ss");
+            console.log("Daterange: From = " + from );
+            var to = moment.utc(ranges[0]["to"]*1000).format("YYYY-MM-DD HH:mm:ss");
+            console.log("Daterange: To = " + to);
     
             market.ranges = ranges;
     
