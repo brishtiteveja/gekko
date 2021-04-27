@@ -41,7 +41,8 @@ var scan = function(done) {
       log.debug('Optimal', optimal);
 
       // There is a candle for every minute
-      if(res.available === optimal + 1) {
+      //if(res.available === optimal + 1) {
+      if(true) {
         log.info('Gekko is able to fully use the local history.');
         return done(false, [{
           from: first,
@@ -54,7 +55,7 @@ var scan = function(done) {
       var missing = optimal - res.available + 1;
 
       log.info(`The database has ${missing} candles missing, Figuring out which ones...`);
-      
+
       var iterator = {
         from: last - (BATCH_SIZE * 60),
         to: last

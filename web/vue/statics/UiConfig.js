@@ -14,7 +14,7 @@ const CONFIG = {
     ui: {
       ssl: false,  // false for headless
       //host: '127.0.0.1',
-      host: '18.191.134.93',
+      host: '18.218.250.68',
       //host: 'ec2-3-17-143-70.us-east-2.compute.amazonaws.com', // couldn't manage to work from cloud
       //host: '3.17.143.70', // for headless
       //port: 443,
